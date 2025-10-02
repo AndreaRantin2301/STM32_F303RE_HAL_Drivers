@@ -3,6 +3,7 @@
 .fpu softvfp
 .thumb
 
+# TODO .data is aligned by 4 so i can copy word by word and skip half-word and byte copy
 CopyData_ToSRAM:
     # Set stack pointer
     LDR sp, =_estack
@@ -45,9 +46,25 @@ CopyData_Byte:
     B Init_Bss
 
 Init_Bss:
-    # TODO
+    LDR r1, = _ebss
+    LDR r2, = _sbss
+    # Calculate size in bytes of .bss
+    SUBS r3,r1,r2
+    # Calculate how many words to zero(.bss is aligned to 4 so it should always work with words)
+    LSR r3,r3,#2
+    MOVS r4,#0
+    B Zero_Bss
+
+Zero_Bss:
+    CBZ r3, Call_Main
+    STR r4, [r2], #4
+    SUBS r3,r3,#1
+    B Zero_Bss
+
+Call_Main:
+    B main
 
 .global Reset_Handler
 Reset_Handler:
     B CopyData_ToSRAM
-    # TODO ZERO INIT .bss
+    
